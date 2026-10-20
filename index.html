@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>DATASIMPLE — Analisis Data Statistik Sederhana</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root{--navy:#0f2a52;--navy2:#1b3f7a;--sky:#4aa3e8;--pale:#eaf4fd;--bg:#f4f6f9;--line:#d9e0ea;--tx:#1c2433;--mut:#5d6a7f;--err:#b3261e;--ok:#17794a}
+*{box-sizing:border-box}
+body{margin:0;font:16px/1.55 "Segoe UI",system-ui,-apple-system,Roboto,Arial,sans-serif;color:var(--tx);background:var(--bg)}
+.app{display:grid;grid-template-columns:250px 1fr;min-height:100vh}
+.side{background:var(--navy);color:#fff;padding:20px 14px;position:sticky;top:0;height:100vh}
+.logo{display:flex;align-items:center;gap:10px;font-weight:800;font-size:1.25rem;letter-spacing:.3px;padding:0 8px 18px}
+.logo svg{width:34px;height:34px;flex:none}
+.side nav button{display:block;width:100%;text-align:left;background:none;border:0;color:#cfe0f5;padding:11px 12px;border-radius:8px;font:inherit;cursor:pointer;margin-bottom:3px}
+.side nav button:hover{background:var(--navy2)}
+.side nav button.on{background:var(--sky);color:#06213f;font-weight:700}
+.menu{display:none}
+main{padding:28px;max-width:1100px;width:100%}
+.page{display:none}.page.on{display:block}
+h1{font-size:clamp(1.7rem,4vw,2.4rem);line-height:1.2;margin:0 0 10px;color:var(--navy)}
+h2{margin:0 0 12px;color:var(--navy);font-size:1.4rem}
+h3{margin:18px 0 8px;color:var(--navy2)}
+.hero{background:linear-gradient(135deg,var(--navy),var(--navy2));color:#fff;border-radius:14px;padding:30px}
+.hero h1{color:#fff}.hero p{color:#d6e6f8;max-width:62ch;margin:0 0 20px}
+.card{background:#fff;border:1px solid var(--line);border-radius:10px;padding:18px;margin-top:16px}
+.btn{font:inherit;border:1px solid var(--navy2);background:#fff;color:var(--navy2);padding:9px 15px;border-radius:8px;cursor:pointer;font-weight:600}
+.btn:hover{background:var(--pale)}
+.btn.p{background:var(--sky);border-color:var(--sky);color:#06213f}.btn.p:hover{background:#6bb7ee}
+.btn.d{color:var(--err);border-color:var(--err)}
+.hero .btn:not(.p){background:transparent;color:#fff;border-color:#9bbbe0}.hero .btn:not(.p):hover{background:#ffffff22}
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:16px}
+.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:16px}
+.stat{background:#fff;border:1px solid var(--line);border-left:5px solid var(--sky);border-radius:10px;padding:14px 16px}
+.stat b{display:block;font-size:1.7rem;color:var(--navy)}.stat span{color:var(--mut);font-size:.9rem}
+.go{background:#fff;border:1px solid var(--line);border-radius:10px;padding:14px;text-align:left;cursor:pointer;font:inherit}
+.go:hover{border-color:var(--sky);background:var(--pale)}.go b{display:block;color:var(--navy)}.go span{color:var(--mut);font-size:.88rem}
+.wrap{overflow-x:auto;border:1px solid var(--line);border-radius:8px;background:#fff;max-height:60vh}
+table{border-collapse:collapse;width:100%;font-size:.93rem}
+th,td{border-bottom:1px solid var(--line);padding:6px 8px;text-align:left;white-space:nowrap}
+th{background:var(--pale);color:var(--navy);position:sticky;top:0}
+td input,th input{font:inherit;border:1px solid transparent;background:transparent;padding:5px 6px;width:100%;min-width:90px;border-radius:5px}
+td input:focus,th input:focus{outline:2px solid var(--sky);background:#fff}
+th input{font-weight:700;color:var(--navy)}
+.x{border:0;background:none;cursor:pointer;color:var(--err);font-size:1rem}
+.st td:first-child{font-weight:600;background:#fafbfd}.st td,.st th{white-space:normal}
+select{font:inherit;padding:8px;border:1px solid var(--line);border-radius:8px;background:#fff;max-width:100%}
+label.ck{display:inline-flex;gap:6px;align-items:center;background:var(--pale);padding:5px 10px;border-radius:20px;cursor:pointer}
+.note{color:var(--mut);font-size:.9rem}.err{color:var(--err)}
+.interp li{margin-bottom:8px}
+#toasts{position:fixed;right:14px;bottom:14px;z-index:9;display:grid;gap:8px}
+.toast{background:var(--navy);color:#fff;padding:11px 16px;border-radius:8px;box-shadow:0 4px 14px #0004;max-width:320px}
+.toast.err{background:var(--err)}.toast.ok{background:var(--ok)}
+.chartbox{position:relative;height:min(420px,70vw);min-height:280px}
+@media(max-width:820px){
+.app{grid-template-columns:1fr}
+.side{position:static;height:auto;padding:12px}
+.menu{display:block;float:right;background:var(--navy2);color:#fff;border:0;border-radius:8px;padding:6px 12px;font:inherit}
+.logo{padding:0}.side nav{display:none;margin-top:12px}.side nav.open{display:block}
+main{padding:16px}.grid3,.grid4{grid-template-columns:1fr 1fr}}
+@media(max-width:480px){.grid3,.grid4{grid-template-columns:1fr}}
+@media print{.side,.noprint,#toasts{display:none!important}.app{display:block}.page{display:none!important}.page.on{display:block!important}body{background:#fff}main{padding:0}.card{border:0;padding:0}}
+</style>
+</head>
+<body>
+<div class="app">
+<aside class="side noprint">
+ <button class="menu" onclick="document.getElementById('nav').classList.toggle('open')" aria-label="Menu">☰ Menu</button>
+ <div class="logo"><svg viewBox="0 0 40 40"><rect width="40" height="40" rx="9" fill="#4aa3e8"/><rect x="8" y="22" width="6" height="10" fill="#0f2a52"/><rect x="17" y="14" width="6" height="18" fill="#0f2a52"/><rect x="26" y="8" width="6" height="24" fill="#fff"/></svg>DATASIMPLE</div>
+ <nav id="nav">
+  <button data-p="home">Beranda</button><button data-p="input">Input Data</button><button data-p="stat">Statistik Deskriptif</button><button data-p="viz">Visualisasi</button><button data-p="hasil">Hasil Analisis</button>
+ </nav>
+</aside>
+<main>
+<input type="file" id="file" accept=".xlsx,.xls,.csv" hidden>
+
+<section class="page" id="p-home">
+ <div class="hero">
+  <h1>Analisis Data Statistik Jadi Lebih Mudah</h1>
+  <p>DATASIMPLE — Analisis Data Lebih Mudah dan Praktis. Olah data dari Excel, CSV, atau input manual langsung di browser Anda. Data tidak dikirim ke server mana pun.</p>
+  <div class="row">
+   <button class="btn p" onclick="pick()">Upload File Excel/CSV</button>
+   <button class="btn" onclick="show('input')">Input Data Manual</button>
+   <button class="btn" onclick="sample()">Gunakan Data Contoh</button>
+  </div>
+ </div>
+ <div class="grid3">
+  <div class="stat"><b id="d-obs">0</b><span>Jumlah observasi</span></div>
+  <div class="stat"><b id="d-var">0</b><span>Jumlah variabel</span></div>
+  <div class="stat"><b id="d-st" style="font-size:1.1rem;padding:6px 0">-</b><span>Status dataset</span></div>
+ </div>
+ <div class="grid4">
+  <button class="go" data-p="input"><b>Input Data</b><span>Unggah file atau ketik data</span></button>
+  <button class="go" data-p="stat"><b>Statistik Deskriptif</b><span>Mean, median, modus, dll.</span></button>
+  <button class="go" data-p="viz"><b>Visualisasi</b><span>Batang, garis, histogram, lingkaran</span></button>
+  <button class="go" data-p="hasil"><b>Hasil Analisis</b><span>Interpretasi dan ekspor</span></button>
+ </div>
+</section>
+
+<section class="page" id="p-input">
+ <h2>Input Data</h2>
+ <div class="card" style="margin-top:0">
+  <div class="row noprint">
+   <button class="btn p" onclick="pick()">Upload Excel/CSV</button>
+   <select id="sheet" style="display:none" aria-label="Pilih sheet"></select>
+   <button class="btn" onclick="addRow()">+ Baris</button>
+   <button class="btn" onclick="addCol()">+ Kolom</button>
+   <button class="btn" onclick="sample()">Data Contoh</button>
+   <button class="btn d" onclick="clearAll()">Hapus Dataset</button>
+  </div>
+  <p class="note" id="info"></p>
+  <div class="wrap"><table id="tbl"></table></div>
+  <p class="note">Klik sel untuk mengedit. Anda dapat menyalin data dari Excel lalu menempelkannya (Ctrl+V) pada sel tujuan. Nama kolom bisa diubah pada baris judul.</p>
+  <button class="btn p" onclick="start()">Mulai Analisis</button>
+ </div>
+</section>
+
+<section class="page" id="p-stat">
+ <h2>Statistik Deskriptif</h2>
+ <div class="card" style="margin-top:0">
+  <div class="row noprint"><b>Perhitungan:</b>
+   <select id="mode"><option value="1">Sampel (n − 1)</option><option value="0">Populasi (n)</option></select></div>
+  <p class="row noprint" id="chks"></p>
+  <div class="wrap"><table class="st" id="stTbl"></table></div>
+  <p class="note" id="stNote"></p>
+ </div>
+</section>
+
+<section class="page" id="p-viz">
+ <h2>Visualisasi Data</h2>
+ <div class="card" style="margin-top:0">
+  <div class="row">
+   <select id="ctype"><option value="bar">Diagram batang</option><option value="line">Diagram garis</option><option value="hist">Histogram</option><option value="pie">Diagram lingkaran (kategorikal)</option></select>
+   <select id="ccol"></select>
+  </div>
+  <p id="cmsg" class="err"></p>
+  <div class="chartbox"><canvas id="cv"></canvas></div>
+ </div>
+</section>
+
+<section class="page" id="p-hasil">
+ <h2>Hasil Analisis</h2>
+ <div class="card" style="margin-top:0">
+  <div class="row noprint">
+   <button class="btn" onclick="dlData()">Unduh Dataset (CSV)</button>
+   <button class="btn" onclick="dlStat()">Unduh Statistik (CSV)</button>
+   <button class="btn" onclick="show('hasil');window.print()">Cetak</button>
+   <button class="btn" onclick="show('input')">Kembali ke Input Data</button>
+  </div>
+  <h3>Tabel statistik <span class="note" id="rmode"></span></h3>
+  <div class="wrap"><table class="st" id="resTbl"></table></div>
+  <h3>Interpretasi otomatis</h3>
+  <ul class="interp" id="interp"></ul>
+ </div>
+</section>
+</main>
+</div>
+<div id="toasts"></div>
+
+<script>
+"use strict";
+const $=s=>document.querySelector(s);
+let D={cols:[],rows:[]},src='',wb=null,ch=null,chk={};
+const esc=s=>String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+const num=v=>{v=String(v==null?'':v).trim();return /^-?\d+([.,]\d+)?$/.test(v)?+v.replace(',','.'):NaN};
+const fmt=x=>typeof x==='number'?(isFinite(x)?x.toLocaleString('id-ID',{maximumFractionDigits:4}):'—'):x;
+function toast(m,t){const d=document.createElement('div');d.className='toast '+(t||'');d.textContent=m;$('#toasts').appendChild(d);setTimeout(()=>d.remove(),3800)}
+function blank(){D={cols:['Variabel 1','Variabel 2','Variabel 3'],rows:Array.from({length:5},()=>['','',''])};src=''}
+function obsCount(){return D.rows.filter(r=>r.some(c=>String(c).trim()!=='')).length}
+
+/* ---------- Navigasi ---------- */
+function show(p){
+ document.querySelectorAll('.page').forEach(e=>e.classList.toggle('on',e.id==='p-'+p));
+ document.querySelectorAll('.side nav button').forEach(b=>b.classList.toggle('on',b.dataset.p===p));
+ $('#nav').classList.remove('open');
+ if(p==='home')dash();if(p==='input')renderTbl();if(p==='stat')renderStat();if(p==='viz')renderViz();if(p==='hasil')renderRes();
+ scrollTo(0,0);
+}
+document.addEventListener('click',e=>{const b=e.target.closest('[data-p]');if(b)show(b.dataset.p)});
+function dash(){const o=obsCount();$('#d-obs').textContent=o;$('#d-var').textContent=D.cols.length;$('#d-st').textContent=o?'Aktif'+(src?' — '+src:' (manual)'):'Belum ada data'}
+
+/* ---------- Kolom & statistik ---------- */
+function colInfo(j){const v=[];let empty=0,text=0;D.rows.forEach(r=>{const s=String(r[j]==null?'':r[j]).trim();if(s==='')empty++;else{const n=num(s);isNaN(n)?text++:v.push(n)}});return{v,empty,text,numeric:v.length>0&&v.length>=text}}
+function calc(j,sample){
+ const{v,empty,text}=colInfo(j),n=v.length,o={n,empty,text};
+ const sum=v.reduce((a,b)=>a+b,0),mean=n?sum/n:NaN,s=[...v].sort((a,b)=>a-b);
+ o.sum=n?sum:NaN;o.mean=mean;
+ o.median=n?(n%2?s[(n-1)/2]:(s[n/2-1]+s[n/2])/2):NaN;
+ const f=new Map();v.forEach(x=>f.set(x,(f.get(x)||0)+1));const mx=Math.max(0,...f.values());
+ o.mode=!n?'—':(mx===1&&n>1?'Tidak ada modus':[...f].filter(e=>e[1]===mx).map(e=>fmt(e[0])).join(', ')+(mx>1?' (muncul '+mx+'×)':''));
+ o.min=n?s[0]:NaN;o.max=n?s[n-1]:NaN;o.range=n?o.max-o.min:NaN;
+ const d=n-(sample?1:0);o.vr=d>0?v.reduce((a,x)=>a+(x-mean)**2,0)/d:NaN;o.sd=Math.sqrt(o.vr);
+ return o}
+const isSample=()=>$('#mode').value==='1';
+const LB=[['Jumlah data valid (n)','n'],['Jumlah nilai (Σ)','sum'],['Data kosong','empty'],['Data teks (diabaikan)','text'],['Mean (rata-rata)','mean'],['Median','median'],['Modus','mode'],['Minimum','min'],['Maksimum','max'],['Rentang','range'],['Varians','vr'],['Standar deviasi','sd']];
+function chosen(){return D.cols.map((c,j)=>j).filter(j=>colInfo(j).numeric&&(chk[D.cols[j]]!==undefined?chk[D.cols[j]]:!/^(no|nomor|id|nim)$/i.test(String(D.cols[j]).trim())))}
+function matrix(cols){const C=cols.map(j=>calc(j,isSample()));return[['Statistik',...cols.map(j=>D.cols[j]||'Kolom '+(j+1))],...LB.map(l=>[l[0],...C.map(c=>c[l[1]])])]}
+function tblHTML(m){return'<thead><tr>'+m[0].map(h=>'<th>'+esc(h)+'</th>').join('')+'</tr></thead><tbody>'+m.slice(1).map(r=>'<tr>'+r.map(c=>'<td>'+esc(fmt(c))+'</td>').join('')+'</tr>').join('')+'</tbody>'}
+function renderStat(){
+ const nums=D.cols.map((c,j)=>j).filter(j=>colInfo(j).numeric);
+ if(!nums.length){$('#chks').innerHTML='';$('#stTbl').innerHTML='';$('#stNote').innerHTML='<span class="err">Belum ada kolom numerik. Isi data pada halaman Input Data atau gunakan data contoh.</span>';return}
+ $('#chks').innerHTML='<b>Kolom:</b> '+nums.map(j=>'<label class="ck"><input type="checkbox" data-c="'+esc(D.cols[j])+'" '+(chosen().includes(j)?'checked':'')+'>'+esc(D.cols[j])+'</label>').join('');
+ const cs=chosen();
+ if(!cs.length){$('#stTbl').innerHTML='';$('#stNote').innerHTML='<span class="err">Pilih minimal satu kolom numerik.</span>';return}
+ $('#stTbl').innerHTML=tblHTML(matrix(cs));
+ $('#stNote').textContent=(cs.some(j=>calc(j,true).n<2)&&isSample()?'Varians dan standar deviasi sampel membutuhkan minimal 2 data valid. ':'')+'Sel kosong dan teks tidak dihitung sebagai angka nol.';
+}
+$('#chks').addEventListener('change',e=>{chk[e.target.dataset.c]=e.target.checked;renderStat()});
+$('#mode').addEventListener('change',()=>{renderStat()});
+function interp(){
+ const cs=chosen(),sm=isSample();
+ if(!cs.length)return['<span class="err">Belum ada kolom numerik yang dipilih untuk dianalisis.</span>'];
+ return cs.map(j=>{const c=calc(j,sm),nm='<b>'+esc(D.cols[j])+'</b>';
+  if(!c.n)return nm+': tidak ada data valid.';
+  let t=nm+': jumlah data valid yang dianalisis adalah '+fmt(c.n)+' observasi'+(c.empty+c.text?' ('+(c.empty?c.empty+' kosong':'')+(c.empty&&c.text?', ':'')+(c.text?c.text+' berupa teks':'')+' diabaikan)':'')+'. Rata-rata data adalah '+fmt(c.mean)+' dan median adalah '+fmt(c.median)+'. Nilai terendah adalah '+fmt(c.min)+' dan nilai tertinggi adalah '+fmt(c.max)+' (rentang '+fmt(c.range)+').';
+  if(c.mode!=='—')t+=' Modus: '+esc(c.mode)+'.';
+  if(isNaN(c.sd))t+=' Standar deviasi belum dapat dihitung karena data valid kurang dari 2.';
+  else{t+=' Standar deviasi '+(sm?'sampel':'populasi')+' sebesar '+fmt(c.sd)+' menunjukkan tingkat penyebaran data terhadap rata-ratanya.';
+   if(c.mean!==0){const cv=Math.abs(c.sd/c.mean);t+=' Koefisien variasi sekitar '+fmt(cv*100)+'%, yaitu penyebaran '+(cv<.15?'relatif kecil':cv<.3?'sedang':'relatif besar')+' terhadap rata-rata.'}}
+  return t})}
+function renderRes(){
+ const cs=chosen();$('#rmode').textContent='(varians & simpangan baku: '+(isSample()?'sampel':'populasi')+')';
+ $('#resTbl').innerHTML=cs.length?tblHTML(matrix(cs)):'';
+ $('#interp').innerHTML=interp().map(t=>'<li>'+t+'</li>').join('');
+}
+
+/* ---------- Tabel input manual ---------- */
+function renderTbl(){
+ $('#tbl').innerHTML='<thead><tr><th>#</th>'+D.cols.map((c,j)=>'<th><div class="row" style="flex-wrap:nowrap;gap:2px"><input data-h="'+j+'" value="'+esc(c)+'" aria-label="Nama kolom"><button class="x" data-dc="'+j+'" title="Hapus kolom">×</button></div></th>').join('')+'<th></th></tr></thead><tbody>'+
+ D.rows.map((r,i)=>'<tr><td>'+(i+1)+'</td>'+r.map((c,j)=>'<td><input data-i="'+i+'" data-j="'+j+'" value="'+esc(c)+'"></td>').join('')+'<td><button class="x" data-dr="'+i+'" title="Hapus baris">🗑</button></td></tr>').join('')+'</tbody>';
+ info();dash();
+}
+function info(){let e=0;D.rows.forEach(r=>r.forEach(c=>{if(String(c).trim()==='')e++}));
+ $('#info').textContent=(src?'Sumber: '+src+'. ':'')+D.rows.length+' baris × '+D.cols.length+' kolom, '+e+' sel kosong.'}
+$('#tbl').addEventListener('input',e=>{const t=e.target;if(t.dataset.h!==undefined)D.cols[+t.dataset.h]=t.value;else if(t.dataset.i!==undefined)D.rows[+t.dataset.i][+t.dataset.j]=t.value;info();dash()});
+$('#tbl').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;
+ if(b.dataset.dr!==undefined){if(D.rows.length<2)return toast('Minimal harus ada satu baris.','err');D.rows.splice(+b.dataset.dr,1)}
+ else if(b.dataset.dc!==undefined){if(D.cols.length<2)return toast('Minimal harus ada satu kolom.','err');const j=+b.dataset.dc;D.cols.splice(j,1);D.rows.forEach(r=>r.splice(j,1))}
+ renderTbl()});
+$('#tbl').addEventListener('paste',e=>{const t=e.target;if(t.dataset.i===undefined)return;
+ const txt=(e.clipboardData||window.clipboardData).getData('text');if(!/[\t\n]/.test(txt.trim()))return;
+ e.preventDefault();const L=txt.replace(/\r/g,'').replace(/\n+$/,'').split('\n').map(l=>l.split('\t'));const i0=+t.dataset.i,j0=+t.dataset.j;
+ L.forEach((l,a)=>{while(D.rows.length<=i0+a)D.rows.push(D.cols.map(()=>''));l.forEach((v,b)=>{while(D.cols.length<=j0+b){D.cols.push('Variabel '+(D.cols.length+1));D.rows.forEach(r=>r.push(''))}D.rows[i0+a][j0+b]=v.trim()})});
+ renderTbl();toast('Data berhasil ditempel ('+L.length+' baris).','ok')});
+function addRow(){D.rows.push(D.cols.map(()=>''));renderTbl()}
+function addCol(){D.cols.push('Variabel '+(D.cols.length+1));D.rows.forEach(r=>r.push(''));renderTbl()}
+function clearAll(){if(confirm('Hapus seluruh dataset? Tindakan ini tidak dapat dibatalkan.')){blank();wb=null;$('#sheet').style.display='none';renderTbl();toast('Dataset dihapus.','ok')}}
+function start(){if(!D.cols.some((c,j)=>colInfo(j).numeric))return toast('Belum ada data numerik. Isi minimal satu kolom dengan angka.','err');show('stat')}
+function sample(){
+ const n=['Andi','Budi','Citra','Dewi','Eko','Fitri','Gilang','Hana','Indra','Joko','Kartika','Lukman'],u=[78,65,88,72,90,55,81,69,74,85,60,92],a=[82,70,85,75,94,62,79,73,80,88,66,90];
+ D={cols:['Nomor','Nama','Nilai UTS','Nilai UAS'],rows:n.map((x,i)=>[String(i+1),x,String(u[i]),String(a[i])])};src='Data contoh';chk={};wb=null;$('#sheet').style.display='none';
+ show('input');toast('Data contoh berhasil dimuat.','ok')}
+
+/* ---------- Upload ---------- */
+function pick(){$('#file').value='';$('#file').click()}
+function parseCSV(t){
+ t=t.replace(/^\ufeff/,'');const f=t.split('\n')[0]||'',d=(f.match(/;/g)||[]).length>(f.match(/,/g)||[]).length?';':',';
+ const out=[];let r=[],c='',q=false;
+ for(let i=0;i<t.length;i++){const ch=t[i];
+  if(q){if(ch==='"'){if(t[i+1]==='"'){c+='"';i++}else q=false}else c+=ch}
+  else if(ch==='"')q=true;else if(ch===d){r.push(c);c=''}
+  else if(ch==='\n'||ch==='\r'){if(ch==='\r'&&t[i+1]==='\n')i++;r.push(c);out.push(r);r=[];c=''}else c+=ch}
+ if(c!==''||r.length){r.push(c);out.push(r)}return out}
+function setData(a,name){
+ a=a.filter(r=>r.some(c=>String(c==null?'':c).trim()!==''));
+ if(!a.length)return toast('File tidak berisi data.','err');
+ const w=Math.max(...a.map(r=>r.length));
+ D.cols=Array.from({length:w},(_,j)=>{const h=String(a[0][j]==null?'':a[0][j]).trim();return h||'Kolom '+(j+1)});
+ D.rows=a.slice(1).map(r=>Array.from({length:w},(_,j)=>r[j]==null?'':String(r[j]).trim()));
+ if(!D.rows.length)D.rows=[D.cols.map(()=>'')];
+ src=name;chk={};show('input');toast('File berhasil dimuat: '+D.rows.length+' baris, '+w+' kolom.','ok')}
+function useSheet(n,fn){setData(XLSX.utils.sheet_to_json(wb.Sheets[n],{header:1,defval:'',raw:true}),fn+' ('+n+')')}
+$('#file').addEventListener('change',e=>{
+ const f=e.target.files[0];if(!f)return;
+ if(!/\.(xlsx|xls|csv)$/i.test(f.name))return toast('Format tidak didukung. Gunakan file .xlsx, .xls, atau .csv.','err');
+ const r=new FileReader();r.onerror=()=>toast('File gagal dibaca. Coba file lain.','err');
+ if(/\.csv$/i.test(f.name)){r.onload=()=>{try{setData(parseCSV(r.result),f.name)}catch(x){toast('File CSV gagal diproses.','err')}};r.readAsText(f)}
+ else{if(typeof XLSX==='undefined')return toast('Library pembaca Excel gagal dimuat (periksa koneksi internet). Gunakan file CSV atau input manual.','err');
+  r.onload=()=>{try{wb=XLSX.read(r.result,{type:'array'});const s=$('#sheet');
+   s.innerHTML=wb.SheetNames.map(n=>'<option>'+esc(n)+'</option>').join('');s.style.display=wb.SheetNames.length>1?'':'none';s.onchange=()=>useSheet(s.value,f.name);useSheet(wb.SheetNames[0],f.name)}catch(x){toast('File Excel gagal dibaca atau rusak.','err')}};r.readAsArrayBuffer(f)}});
+
+/* ---------- Grafik ---------- */
+const PAL=['#1b3f7a','#4aa3e8','#7fc4f2','#0f2a52','#8aa4c8','#2f6fb5','#b5d6f0','#5d6a7f','#a9bcd6','#3b8fd6','#264b80','#d0e3f5'];
+function renderViz(){
+ const t=$('#ctype').value,sel=$('#ccol'),old=sel.value;
+ const idx=D.cols.map((c,j)=>j).filter(j=>t==='pie'||colInfo(j).numeric);
+ sel.innerHTML=idx.map(j=>'<option value="'+j+'">'+esc(D.cols[j])+'</option>').join('');
+ if(idx.map(String).includes(old))sel.value=old;
+ draw()}
+$('#ctype').addEventListener('change',renderViz);$('#ccol').addEventListener('change',draw);
+function draw(){
+ const msg=$('#cmsg');msg.textContent='';if(ch){ch.destroy();ch=null}
+ if(typeof Chart==='undefined')return void(msg.textContent='Library grafik (Chart.js) gagal dimuat. Periksa koneksi internet lalu muat ulang halaman.');
+ const t=$('#ctype').value,j=+$('#ccol').value;
+ if($('#ccol').value===''||!D.cols.length)return void(msg.textContent=t==='pie'?'Belum ada data untuk ditampilkan.':'Belum ada kolom numerik. Isi data atau gunakan data contoh.');
+ const nm=D.cols[j];let type=t,labels,data,opt={responsive:true,maintainAspectRatio:false,plugins:{title:{display:true,text:'',font:{size:16}},legend:{display:true}},scales:{}};
+ if(t==='pie'){
+  const f=new Map();D.rows.forEach(r=>{const s=String(r[j]).trim();if(s)f.set(s,(f.get(s)||0)+1)});
+  if(!f.size)return void(msg.textContent='Kolom ini tidak berisi data.');
+  labels=[...f.keys()];data=[...f.values()];type='pie';opt.plugins.title.text='Proporsi kategori: '+nm}
+ else{
+  const k=D.cols.findIndex((c,i)=>i!==j&&!colInfo(i).numeric),L=[],V=[];
+  D.rows.forEach((r,i)=>{const n=num(r[j]);if(!isNaN(n)){V.push(n);L.push(k>=0&&String(r[k]).trim()?String(r[k]):String(i+1))}});
+  if(t==='hist'){
+   const mn=Math.min(...V),mx=Math.max(...V),b=mx===mn?1:Math.ceil(1+Math.log2(V.length)),w=(mx-mn)/b||1,c=Array(b).fill(0);
+   V.forEach(x=>c[Math.min(b-1,Math.floor((x-mn)/w))]++);
+   labels=c.map((_,i)=>fmt(+(mn+i*w).toFixed(2))+'–'+fmt(+(mn+(i+1)*w).toFixed(2)));data=c;type='bar';
+   opt.plugins.title.text='Histogram: '+nm;opt.scales={x:{title:{display:true,text:'Interval nilai'}},y:{title:{display:true,text:'Frekuensi'},beginAtZero:true,ticks:{precision:0}}};
+   ch=new Chart($('#cv'),{type,data:{labels,datasets:[{label:'Frekuensi',data,backgroundColor:'#4aa3e8',borderColor:'#1b3f7a',borderWidth:1,barPercentage:1,categoryPercentage:1}]},options:opt});return}
+  labels=L;data=V;opt.plugins.title.text=(t==='bar'?'Diagram batang: ':'Diagram garis: ')+nm;
+  opt.scales={x:{title:{display:true,text:k>=0?D.cols[k]:'Nomor baris'}},y:{title:{display:true,text:nm}}}}
+ ch=new Chart($('#cv'),{type,data:{labels,datasets:[{label:nm,data,backgroundColor:t==='pie'?labels.map((_,i)=>PAL[i%PAL.length]):'#4aa3e8',borderColor:t==='line'?'#1b3f7a':'#fff',borderWidth:t==='line'?3:1,tension:.25,fill:false}]},options:opt})}
+
+/* ---------- Ekspor ---------- */
+const q=v=>{v=String(v);return /[",\n;]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v};
+function save(name,rows){const b=new Blob(['\ufeff'+rows.map(r=>r.map(q).join(',')).join('\r\n')],{type:'text/csv;charset=utf-8'}),a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),1000);toast('File '+name+' berhasil diunduh.','ok')}
+function dlData(){if(!obsCount())return toast('Dataset masih kosong.','err');save('dataset-datasimple.csv',[D.cols,...D.rows.filter(r=>r.some(c=>String(c).trim()!==''))])}
+function dlStat(){const cs=chosen();if(!cs.length)return toast('Belum ada kolom numerik untuk dihitung.','err');
+ save('statistik-datasimple.csv',matrix(cs).map(r=>r.map(c=>typeof c==='number'?(isFinite(c)?+c.toFixed(6):''):c)))}
+
+blank();show('home');
+</script>
+</body>
+</html>
